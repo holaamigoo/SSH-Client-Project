@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  ssh-db-server:
+    build: .
+    ports:
+      - "2222:2222"
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      - REDIS_HOST=redis  # Имя сервиса в Docker
+      - REDIS_PORT=6379
+      - REDIS_DB=0
+      - REDIS_PASSWORD=root  # Пароль из настроек Redis
+      - SSH_USERNAME=admin
+      - SSH_PASSWORD=12345
+    volumes:
+      - ./:/app
+      - C:/Users/rst/docker_share:/shared_data  # Папка для обмена файлами
+      #- С:/:/shared
+    restart: unless-stopped
+    networks:
+      - backend
+
+  redis:
+    image: redis:7.0-alpine
+    ports:
+      - "6379:6379"
+    environment:
+      - REDIS_PASSWORD=root  # Пароль для Redis
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "--no-auth-warning", "-a", "$$REDIS_PASSWORD", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - backend
+
+volumes:
+  redis-data:
+
+networks:
+  backend:
+    driver: bridge
